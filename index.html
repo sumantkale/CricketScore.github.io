@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chandwad Cricket Team</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #container {
+            text-align: center;
+        }
+        #scoreboard {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            text-align: center;
+        }
+        #controls {
+            text-align: center;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        input {
+            padding: 5px;
+        }
+        .winner {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        var runs = 0;
+        var wickets = 0;
+        var innings = 1;
+        var target = 0;
+        var overs = 0;
+        var ballsInOver = 0;
+        var maxBallsInOver = 6;
+        var oversLocked = false;
+        var matchOver = false;
+        var winnerDeclared = false;
+        var remainingBalls = 0;
+
+        function addRun(run) {
+            if (!matchOver && ballsInOver < maxBallsInOver) {
+                runs += run;
+                ballsInOver++;
+                lastAction = "run";
+                if (ballsInOver >= maxBallsInOver) {
+                    ballsInOver = 0;
+                    overs++;
+                }
+                if (innings === 2 && (overs > target || (overs === target && ballsInOver > 0))) {
+                    matchOver = true;
+                }
+                if (innings === 2 && runs >= target) {
+                    matchOver = true;
+                    winnerDeclared = true;
+                }
+                updateScoreboard();
+            }
+        }
+
+        function addWicket() {
+            if (!matchOver && ballsInOver < maxBallsInOver) {
+                wickets++;
+                ballsInOver++;
+                lastAction = "wicket";
+                if (ballsInOver >= maxBallsInOver) {
+                    ballsInOver = 0;
+                    overs++;
+                }
+                if (innings === 2 && (overs > target || (overs === target && ballsInOver > 0))) {
+                    matchOver = true;
+                }
+                updateScoreboard();
+            }
+        }
+
+        function addNoBall() {
+            if (!matchOver && ballsInOver < maxBallsInOver) {
+                runs++;
+                lastAction = "noBall";
+                updateScoreboard();
+            }
+        }
+
+        function addWide() {
+            if (!matchOver && ballsInOver < maxBallsInOver) {
+                runs++;
+                lastAction = "wide";
+                updateScoreboard();
+            }
+        }
+
+        function undo() {
+            if (!matchOver && lastAction) {
+                if (lastAction === "run" || lastAction === "noBall" || lastAction === "wide") {
+                    runs--;
+                } else if (lastAction === "wicket") {
+                    wickets--;
+                }
+                if (ballsInOver === 0) {
+                    ballsInOver = maxBallsInOver - 1;
+                    overs--;
+                } else {
+                    ballsInOver--;
+                }
+                lastAction = null;
+                updateScoreboard();
+            }
+        }
+
+     
+
+        function startMatch() {
+            runs = 0;
+            wickets = 0;
+            innings = 1;
+            target = 0;
+            overs = 0;
+            ballsInOver = 0;
+            oversLocked = false;
+            matchOver = false;
+            winnerDeclared = false;
+            lastAction = null;
+            enableButtons(); // Enable buttons for a new match
+            updateScoreboard();
+        }
+
+        function enableButtons() {
+            var buttons = document.querySelectorAll('#controls button');
+            buttons.forEach(function(button) {
+                button.disabled = false;
+            });
+        }
+
+        function disableButtons() {
+            var buttons = document.querySelectorAll('#controls button');
+            buttons.forEach(function(button) {
+                button.disabled = true;
+            });
+            document.getElementById('startMatch').disabled = false;
+        }
+
+        function getWinner() {
+            if (innings === 2 && runs >= target) {
+                return "Team 2";
+            } else if (innings === 2) {
+                return "Team 1";
+            }
+            return "N/A";
+        }
+        function updateScoreboard() {
+            var winner = winnerDeclared ? getWinner() : "N/A";
+            var winnerText = winner !== "N/A" ? `<p class="winner">${winner} Wins!</p>` : '';
+            var overDisplay = `${overs}.${ballsInOver}`;
+            if (ballsInOver === 0) {
+                overDisplay = overs;
+            }
+            var runsRequired = innings === 2 && !matchOver ? `Runs Required: ${target - runs}` : '';
+            var ballsRequired = '';
+            if (innings === 2 && !matchOver) {
+                ballsRequired = `Balls Remain: ${remainingBalls} balls`;
+               }
+            document.getElementById('scoreboard').innerHTML = `
+                <h2>Scoreboard</h2>
+                <p>Innings: ${innings}</p>
+                <p>Runs: ${runs} | Wickets: ${wickets}</p>
+                ${innings === 1 ? `<p>Overs: ${overDisplay}</p>` : ''}
+                ${innings === 2 && !matchOver ? `<p>Target: ${target} | Overs: ${overDisplay}</p>` : ''}
+                ${runsRequired}<br>${ballsRequired}<br>${winnerText}
+            `;
+        }
+
+        function startMatch() {
+            runs = 0;
+            wickets = 0;
+            innings = 1;
+            target = 0;
+            overs = 0;
+            ballsInOver = 0;
+            oversLocked = false;
+            matchOver = false;
+            winnerDeclared = false;
+            remainingBalls = parseInt(document.getElementById('remainingBalls').value);
+            document.getElementById('remainingBalls').disabled = true;
+            document.getElementById('startMatch').disabled = true;
+            updateScoreboard();
+        }
+
+        function switchInnings() {
+            if (innings === 1) {
+                innings = 2;
+                target = runs + 1;
+                overs = 0;
+                ballsInOver = 0;
+                runs = 0;
+                wickets = 0;
+                oversLocked = false;
+                matchOver = false;
+                winnerDeclared = false;
+                document.getElementById('remainingBalls').disabled = false;
+                updateScoreboard();
+            }
+        }
+        function resetMatch() {
+        runs = 0;
+        wickets = 0;
+        innings = 1;
+        target = 0;
+        overs = 0;
+        ballsInOver = 0;
+        oversLocked = false;
+        matchOver = false;
+        winnerDeclared = false;
+        remainingBalls = 0;  // You might want to reset this too
+        document.getElementById('remainingBalls').disabled = false;
+        enableButtons(); // Enable buttons for a new match
+        updateScoreboard();
+        }
+  
+  </script>
+</head>
+<body>
+    <div id="container">
+        <h1>Chandwad Cricket Team</h1>
+        <div id="scoreboard"></div>
+        <div id="controls">
+            <button onclick="resetMatch()">Reset Match</button>
+            <input id="remainingBalls" type="number" placeholder="Remaining Balls">
+            <button id="startMatch" onclick="startMatch()">Start Match</button>
+            <button onclick="addRun(0)">0 Runs</button>
+            <button onclick="addRun(1)">1 Run</button>
+            <button onclick="addRun(2)">2 Runs</button>
+            <button onclick="addRun(3)">3 Runs</button>
+            <button onclick="addRun(4)">4 Runs</button>
+            <button onclick="addRun(6)">6 Runs</button>
+            <button onclick="addNoBall()">No Ball</button>
+            <button onclick="addWide()">Wide</button>
+            <button onclick="addWicket()">Wicket</button>
+            <button onclick="undo()">Undo</button>
+            <button onclick="switchInnings()">Switch Innings</button>
+        </div>
+    </div>
+</body>
+</html>
